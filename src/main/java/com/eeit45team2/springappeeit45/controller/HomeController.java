@@ -9,7 +9,7 @@ public class HomeController {
     public HomeController(){
     }
 
-    @GetMapping("/")
+//    @GetMapping("/")
     public @ResponseBody String home(){
         return "Hello_World";
     }
