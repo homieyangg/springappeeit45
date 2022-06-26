@@ -12,6 +12,12 @@ public class Hobby {
     String name;
     String type;
 
+    public Hobby(Integer id, String name, String type) {
+        super();
+        this.id = id;
+        this.name = name;
+        this.type = type;
+    }
     public Hobby() {
         super();
     }

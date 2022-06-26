@@ -13,7 +13,14 @@ public class Category {
 	
 	public Category() {
 	}
-	
+
+	public Category(Integer id, String name, String shortName, Integer catid) {
+		this.id = id;
+		this.name = name;
+		this.shortName = shortName;
+		this.catid = catid;
+	}
+
 	@Id
 	@Column(name = "id", unique = true, nullable = false)
 	public Integer getId() {

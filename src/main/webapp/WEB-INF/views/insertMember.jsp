@@ -1,5 +1,5 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8"
-    pageEncoding="UTF-8"%>
+    pageEncoding="UTF-8" isErrorPage='true' %>
 <!DOCTYPE html>
 <%@ taglib prefix='c' uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib uri="http://www.springframework.org/tags/form" prefix="form" %>
@@ -16,9 +16,16 @@
 <link  rel='stylesheet'  href="<c:url value= '/css/style.css' />" />
 </head>
 <body>
+<div align="center">
+	${INSERT_ERROR}
+</div>
 <fieldset>
-	<legend >新增會員資料(Member)</legend> 
-	<form:form method="POST" modelAttribute="memberBean">
+
+	<legend >新增會員資料(Member)</legend>
+
+	<c:url var='udt2' value="/insertMember"/>
+
+	<form:form method="POST" modelAttribute="memberBean" enctype="multipart/form-data" action="${udt2}">
 	<Table align="center">
 		<c:choose>
 			<c:when test='${member.id == null}'>
@@ -102,9 +109,9 @@
         </td>
 	   </tr>
 	</Table>
-		 
+
 	</form:form>
-	
+
 </fieldset>
 <br>
 <a href="<c:url value='/hello'/> " >回前頁</a>

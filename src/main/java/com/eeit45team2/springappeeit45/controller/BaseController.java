@@ -6,9 +6,13 @@ import com.eeit45team2.springappeeit45.model.Member;
 import com.eeit45team2.springappeeit45.service.CategoryService;
 import com.eeit45team2.springappeeit45.service.HobbyService;
 import com.eeit45team2.springappeeit45.service.MemberService;
+import com.eeit45team2.springappeeit45.validate.MemberValidator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.propertyeditors.CustomDateEditor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.WebRequest;
@@ -17,13 +21,11 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import javax.sql.rowset.serial.SerialBlob;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
-import java.sql.SQLException;
 import java.sql.Timestamp;
-import java.util.Date;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,6 +33,7 @@ import java.util.Map;
 @Controller
 public class BaseController {
 
+    private static Logger Log = LoggerFactory.getLogger(BaseController.class);
     MemberService memberService;
     CategoryService categoryService;
     HobbyService hobbyService;
@@ -46,7 +49,7 @@ public class BaseController {
     @GetMapping({"/hello", "/"})
     public String home(
             @RequestParam(value = "name", required = false) String visitor,
-            @RequestParam(value = "score", required = false, defaultValue = "-1") Integer score,
+            @RequestParam(value = "score", required = false) Integer score,
             Model model) {
         String message = visitor != null ? visitor + " 您好," : " 訪客您好,";
         model.addAttribute("helloMessage", message);
@@ -54,51 +57,73 @@ public class BaseController {
         return "greeting";
     }
 
-    @GetMapping("/insertMemberFrom")
+    @RequestMapping("/insertMemberForm")
     public String getMemberForm(Model model) {
-        return "/insertMember";
+        return "insertMember";
     }
 
-    @PostMapping("/insertMemberFrom")
-    public String saveMember(Member member, RedirectAttributes ra) {
-        ra.addFlashAttribute("INSERT_SUCCESS", "新增成功");
+    @PostMapping("/insertMember")
+    public String saveMember(Member member, RedirectAttributes ra, BindingResult bindingResult, Model model) {
+        //資料檢查----------
+        MemberValidator validator = new MemberValidator();
+        validator.validate(member, bindingResult);
+        if (bindingResult.hasErrors()){
+            return "insertMember";
+        }
+        //----------------
         Category c = categoryService.getCategory(101);
         member.setCategory(c);
         Hobby h = hobbyService.getHobby(1);
         member.setHobby(h);
-        //時間戳記
+        //時間戳記----------------
         Timestamp ts = new Timestamp(System.currentTimeMillis());
         member.setRegisterTime(ts);
         //----------圖片----------
         SerialBlob blob = null;
         try {
-            blob = null;
             MultipartFile productImage = member.getProductImage();
             InputStream is = productImage.getInputStream();
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             byte[] b = new byte[8192];
             int len = 0;
             while ((len = is.read(b)) != -1) {
-                baos.write(b, 0, 0);
+                baos.write(b, 0, len);
             }
             blob = new SerialBlob(baos.toByteArray());
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-        //-----------------------
         member.setImage(blob);
-        System.out.println(member);
-        memberService.save(member);
-        return "redirect:/";
+        //-----------------------
+        try {
+            memberService.save(member);
+            ra.addFlashAttribute("INSERT_SUCCESS", "新增成功");
+            return "redirect:/";
+        } catch (Exception e) {
+            Log.error(e.getMessage());
+            String sqlMsg = e.getMessage();
+            String errorMsg = "";
+            if (sqlMsg.indexOf("ConstraintViolationException") >= 0) {
+                errorMsg = "帳戶重複";
+            } else {
+                errorMsg = "系統異常,請聯絡開發人員";
+            }
+            model.addAttribute("INSERT_ERROR", "新增失敗" + errorMsg);
+            return "forward:/insertMemberForm";
+        }
     }
 
     @ModelAttribute("memberBean")
     public Member ma01() {
         System.out.println("----------------01");
         Member member = new Member();
-        member.setName("MickeyA");
+        member.setName("趙雲");
+        member.setBirthday(java.sql.Date.valueOf("1999-01-01"));
+        member.setEmail("sa@gmail.com");
+        member.setWeight(123.1);
+        member.setHobby(new Hobby(1, null, null));
+        member.setCategory(new Category(101, null, null, null));
+        member.setGender("F");
 //      model.addAttribute("memberBean",member);
         return member;
     }
@@ -111,9 +136,9 @@ public class BaseController {
         model.addAttribute(hobb);
 
         Map<String, String> map = new HashMap<>();
-        map.put("F","女");
-        map.put("M","男");
-        model.addAttribute("genderMap",map);
+        map.put("F", "女");
+        map.put("M", "男");
+        model.addAttribute("genderMap", map);
     }
 
     @ModelAttribute
