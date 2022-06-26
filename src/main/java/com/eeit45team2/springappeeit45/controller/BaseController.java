@@ -13,6 +13,7 @@ import org.springframework.beans.propertyeditors.CustomDateEditor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
+import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.WebRequest;
@@ -57,17 +58,46 @@ public class BaseController {
         return "greeting";
     }
 
+    @GetMapping("/crm/mem/{id}")
+    public String getMemberForUpdate(Model model, @PathVariable Integer id) {
+        Member member = memberService.get(id);
+        model.addAttribute(member);
+        return "updateMember";
+    }
+
+    @PostMapping("/crm/mem/{id}")
+    public String updateMember(Member member, Model model, @PathVariable Integer id, BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            List<ObjectError> list = bindingResult.getAllErrors();
+            for (ObjectError error : list) {
+                System.out.println("有錯誤：" + error);
+            }
+            return "insertMember";
+        }
+        memberService.update(member);
+        return "updateMember";
+    }
+
     @RequestMapping("/insertMemberForm")
     public String getMemberForm(Model model) {
         return "insertMember";
     }
 
     @PostMapping("/insertMember")
-    public String saveMember(Member member, RedirectAttributes ra, BindingResult bindingResult, Model model) {
+    public String saveMember(@ModelAttribute("memberBean") Member member, RedirectAttributes ra, BindingResult bindingResult, Model model) {
         //資料檢查----------
+        List<ObjectError> list0 = bindingResult.getAllErrors();
+        for (ObjectError error : list0) {
+            System.out.println("有錯誤：" + error);
+        }
+        System.out.println("-------------------------------------");
         MemberValidator validator = new MemberValidator();
         validator.validate(member, bindingResult);
-        if (bindingResult.hasErrors()){
+        if (bindingResult.hasErrors()) {
+            List<ObjectError> list = bindingResult.getAllErrors();
+            for (ObjectError error : list) {
+                System.out.println("有錯誤：" + error);
+            }
             return "insertMember";
         }
         //----------------
@@ -90,6 +120,7 @@ public class BaseController {
                 baos.write(b, 0, len);
             }
             blob = new SerialBlob(baos.toByteArray());
+            member.setFileName(productImage.getOriginalFilename());
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -109,22 +140,18 @@ public class BaseController {
                 errorMsg = "系統異常,請聯絡開發人員";
             }
             model.addAttribute("INSERT_ERROR", "新增失敗" + errorMsg);
-            return "forward:/insertMemberForm";
+            return "insertMember";
         }
     }
 
     @ModelAttribute("memberBean")
-    public Member ma01() {
-        System.out.println("----------------01");
-        Member member = new Member();
-        member.setName("趙雲");
-        member.setBirthday(java.sql.Date.valueOf("1999-01-01"));
-        member.setEmail("sa@gmail.com");
-        member.setWeight(123.1);
-        member.setHobby(new Hobby(1, null, null));
-        member.setCategory(new Category(101, null, null, null));
-        member.setGender("F");
-//      model.addAttribute("memberBean",member);
+    public Member ma01(@PathVariable(required = false) Integer id) {
+        Member member = null;
+        if (id == null){
+            member = new Member();
+        }else {
+            member = memberService.get(id);
+        }
         return member;
     }
 

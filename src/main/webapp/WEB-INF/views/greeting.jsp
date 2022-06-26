@@ -13,6 +13,7 @@
     <font color="red">${INSERT_SUCCESS}</font>
     <hr>
     <a href="<c:url value='/insertMemberForm' />">新增會員</a>
+    <a href="<c:url value='/queryMembers' />">查詢會員</a>
 </div>
 </body>
 </html>
